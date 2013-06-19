@@ -86,7 +86,34 @@
       "Type": "AWS::EC2::Instance",
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
-          "config" : {
+         "configSets" : {
+            "proxy" : [ "config1" , "config2" ]
+          },
+          "config1": {
+            "files": {
+              "/etc/yum.conf": {
+                "content": { "Fn::Join": ["", [
+                "[main]\n",
+                "cachedir=/var/cache/yum/$basearch/$releasever\n",
+                "keepcache=0\n",
+                "debuglevel=2\n",
+                "logfile=/var/log/yum.log\n",
+                "exactarch=1\n",
+                "obsoletes=1\n",
+                "gpgcheck=1\n",
+                "plugins=1\n",
+                "installonly_limit=3\n",
+                "# The proxy server - proxy server:port number\n",
+                "proxy=http://173.36.196.10:80\n",
+                "\n"
+                ]]},
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              }
+            }
+          },
+          "config2" : {
             "packages" : {
               "yum" : {
                 "mysql"        : [],
@@ -116,10 +143,10 @@
           "  exit 1\n",
           "}\n",
 
-          "/opt/aws/bin/cfn-init -s ", { "Ref" : "AWS::StackName" },
+          "/opt/aws/bin/cfn-init -c proxy -s ", { "Ref" : "AWS::StackName" },
           " -r MySqlDatabaseServer ",
           " --region ", { "Ref" : "AWS::Region" },
-          " || error_exit 'Failed to run cfn-init'\n",
+          " || error_exit 'Failed to run cfn-init - RP'\n",
 
           "# Setup MySQL root password and create a user\n",
           "mysqladmin -u root password '", { "Ref" : "DBRootPassword" }, "'\n",
@@ -146,7 +173,7 @@
       "DependsOn" : "MySqlDatabaseServer",
       "Properties" : {
         "Handle" : {"Ref" : "MySqlWaitHandle"},
-        "Timeout" : "600"
+        "Timeout" : "6000"
       }
     }
 
