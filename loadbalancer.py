@@ -28,10 +28,23 @@ lb_template = r'''
   "Description": "Built in HAProxy server",
   "Parameters" : {
     "KeyName" : {
+      "Default": "dkp",
+      "Type" : "String"
+    },
+    "SubnetUuid" : {
+      "Description" : "Subnet UUID",
+      "Default" : "6f0fa417-3777-4ab1-8a7b-ee6602d0581b",
       "Type" : "String"
     }
   },
   "Resources": {
+    "controlXface" : {
+      "Type" : "AWS::EC2::NetworkInterface",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "SubnetUuid" },
+        "Description" :"Interface for control traffic such as SSH"
+      }
+    },
     "latency_watcher": {
      "Type": "AWS::CloudWatch::Alarm",
      "Properties": {
@@ -58,6 +71,34 @@ lb_template = r'''
       "Type": "AWS::EC2::Instance",
       "Metadata": {
         "AWS::CloudFormation::Init": {
+          "configSets" : {
+            "proxy" : [ "config1" , "config" ],
+            "default" : [ { "ConfigSet" : "proxy" } ]
+          },
+          "config1": {
+            "files": {
+              "/etc/yum.conf": {
+                "content": { "Fn::Join": ["", [
+                "[main]\n",
+                "cachedir=/var/cache/yum/$basearch/$releasever\n",
+                "keepcache=0\n",
+                "debuglevel=2\n",
+                "logfile=/var/log/yum.log\n",
+                "exactarch=1\n",
+                "obsoletes=1\n",
+                "gpgcheck=1\n",
+                "plugins=1\n",
+                "installonly_limit=3\n",
+                "# The proxy server - proxy server:port number\n",
+                "proxy=http://171.71.25.73:3128\n",
+                "\n"
+                ]]},
+                "mode": "000644",
+                "owner": "root",
+                "group": "root"
+              }
+            }
+          },
           "config": {
             "packages": {
               "yum": {
@@ -101,7 +142,7 @@ lb_template = r'''
                   "[cfn-init]\n",
                   "triggers=post.update\n",
                   "path=Resources.LB_instance.Metadata\n",
-                  "action=/opt/aws/bin/cfn-init -s ",
+                  "action=/opt/aws/bin/cfn-init -c proxy -s ",
                   { "Ref": "AWS::StackId" },
                   "    -r LB_instance ",
                   "    --region ", { "Ref": "AWS::Region" }, "\n",
@@ -142,6 +183,7 @@ lb_template = r'''
       "Properties": {
         "ImageId": "F17-x86_64-cfntools",
         "InstanceType": "m1.small",
+        "NetworkInterfaces" : [{"Ref": "controlXface"}],
         "KeyName": { "Ref": "KeyName" },
         "UserData": { "Fn::Base64": { "Fn::Join": ["", [
           "#!/bin/bash -v\n",
@@ -176,7 +218,7 @@ lb_template = r'''
       "DependsOn" : "LB_instance",
       "Properties" : {
         "Handle" : {"Ref" : "WaitHandle"},
-        "Timeout" : "600"
+        "Timeout" : "1500"
       }
     }
   },
@@ -393,5 +435,6 @@ class LoadBalancer(stack_resource.StackResource):
 
 def resource_mapping():
     return {
-        'Custom::::ElasticLoadBalancing::LoadBalancer': LoadBalancer,
+        'AWS::ElasticLoadBalancing::LoadBalancer': LoadBalancer,
     }
+
