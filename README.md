@@ -1,4 +1,4 @@
-heat-templates
+custom-templates
 ==============
 
-Openstack Heat templates
+Openstack Heat custom templates
