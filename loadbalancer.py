@@ -435,6 +435,6 @@ class LoadBalancer(stack_resource.StackResource):
 
 def resource_mapping():
     return {
-        'AWS::ElasticLoadBalancing::LoadBalancer': LoadBalancer,
+        'Custom::::ElasticLoadBalancing::LoadBalancer': LoadBalancer,
     }
 
