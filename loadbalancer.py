@@ -33,7 +33,7 @@ lb_template = r'''
     },
     "SubnetUuid" : {
       "Description" : "Subnet UUID",
-      "Default" : "6f0fa417-3777-4ab1-8a7b-ee6602d0581b",
+      "Default" : "05dc469a-8c13-49f9-827c-1ceda6c0aace",
       "Type" : "String"
     }
   },
@@ -181,7 +181,7 @@ lb_template = r'''
         }
       },
       "Properties": {
-        "ImageId": "F17-x86_64-cfntools",
+        "ImageId": "f19-heat-cfntools",
         "InstanceType": "m1.small",
         "NetworkInterfaces" : [{"Ref": "controlXface"}],
         "KeyName": { "Ref": "KeyName" },
